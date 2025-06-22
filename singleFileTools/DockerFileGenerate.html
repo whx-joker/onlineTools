@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dockerfile生成工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 18px;
+            line-height: 1.5;
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        .main-interface {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 20px;
+            height: 700px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 18px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .instruction-group {
+            margin-bottom: 25px;
+        }
+
+        .instruction-group h4 {
+            color: #3498db;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .instruction-item:hover {
+            background: #e3f2fd;
+            border-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .instruction-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .instruction-item i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .instruction-name {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .instruction-desc {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .main-editor {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e8ed;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .editor-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 0;
+            font-family: 'Courier New', monospace;
+            background: #2c3e50;
+            color: #ecf0f1;
+            border: none;
+            resize: none;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .properties-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .instruction-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 2px solid #3498db;
+        }
+
+        .instruction-form h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .add-instruction-btn {
+            width: 100%;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-instruction-btn:hover {
+            background: #219a52;
+            transform: translateY(-2px);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-btn {
+            padding: 10px;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-interface {
+                grid-template-columns: 280px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-interface {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .sidebar, .properties-panel {
+                order: 2;
+            }
+            
+            .main-editor {
+                order: 1;
+                height: 400px;
+            }
+        }
+
+        .line-numbers {
+            background: #34495e;
+            color: #7f8c8d;
+            padding: 20px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #4a5f7a;
+        }
+
+        .editor-wrapper {
+            display: flex;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1><i class="fab fa-docker"></i> Dockerfile 生成工具</h1>
+            <p>快速构建标准化的 Dockerfile，支持所有 Docker 指令</p>
+        </div>
+
+        <!-- 主界面 -->
+        <div class="main-interface">
+            <!-- 左侧指令面板 -->
+            <div class="sidebar">
+                <h3><i class="fas fa-cube"></i> Docker 指令</h3>
+                
+                <div class="instruction-group">
+                    <h4>基础指令</h4>
+                    <div class="instruction-item" data-instruction="FROM">
+                        <i class="fas fa-download"></i>
+                        <div>
+                            <div class="instruction-name">FROM</div>
+                            <div class="instruction-desc">指定基础镜像</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="MAINTAINER">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <div class="instruction-name">MAINTAINER</div>
+                            <div class="instruction-desc">维护者信息</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="LABEL">
+                        <i class="fas fa-tag"></i>
+                        <div>
+                            <div class="instruction-name">LABEL</div>
+                            <div class="instruction-desc">添加元数据标签</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instruction-group">
+                    <h4>文件操作</h4>
+                    <div class="instruction-item" data-instruction="COPY">
+                        <i class="fas fa-copy"></i>
+                        <div>
+                            <div class="instruction-name">COPY</div>
+                            <div class="instruction-desc">复制文件到镜像</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="ADD">
+                        <i class="fas fa-plus"></i>
+                        <div>
+                            <div class="instruction-name">ADD</div>
+                            <div class="instruction-desc">添加文件(支持URL)</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="WORKDIR">
+                        <i class="fas fa-folder"></i>
+                        <div>
+                            <div class="instruction-name">WORKDIR</div>
+                            <div class="instruction-desc">设置工作目录</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instruction-group">
+                    <h4>执行指令</h4>
+                    <div class="instruction-item" data-instruction="RUN">
+                        <i class="fas fa-terminal"></i>
+                        <div>
+                            <div class="instruction-name">RUN</div>
+                            <div class="instruction-desc">执行命令</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="CMD">
+                        <i class="fas fa-play"></i>
+                        <div>
+                            <div class="instruction-name">CMD</div>
+                            <div class="instruction-desc">默认执行命令</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="ENTRYPOINT">
+                        <i class="fas fa-rocket"></i>
+                        <div>
+                            <div class="instruction-name">ENTRYPOINT</div>
+                            <div class="instruction-desc">入口点命令</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instruction-group">
+                    <h4>环境配置</h4>
+                    <div class="instruction-item" data-instruction="ENV">
+                        <i class="fas fa-cog"></i>
+                        <div>
+                            <div class="instruction-name">ENV</div>
+                            <div class="instruction-desc">设置环境变量</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="ARG">
+                        <i class="fas fa-key"></i>
+                        <div>
+                            <div class="instruction-name">ARG</div>
+                            <div class="instruction-desc">构建参数</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="EXPOSE">
+                        <i class="fas fa-network-wired"></i>
+                        <div>
+                            <div class="instruction-name">EXPOSE</div>
+                            <div class="instruction-desc">暴露端口</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="VOLUME">
+                        <i class="fas fa-database"></i>
+                        <div>
+                            <div class="instruction-name">VOLUME</div>
+                            <div class="instruction-desc">挂载卷</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instruction-group">
+                    <h4>高级指令</h4>
+                    <div class="instruction-item" data-instruction="USER">
+                        <i class="fas fa-user-cog"></i>
+                        <div>
+                            <div class="instruction-name">USER</div>
+                            <div class="instruction-desc">切换用户</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="HEALTHCHECK">
+                        <i class="fas fa-heartbeat"></i>
+                        <div>
+                            <div class="instruction-name">HEALTHCHECK</div>
+                            <div class="instruction-desc">健康检查</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="STOPSIGNAL">
+                        <i class="fas fa-stop"></i>
+                        <div>
+                            <div class="instruction-name">STOPSIGNAL</div>
+                            <div class="instruction-desc">停止信号</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="SHELL">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <div class="instruction-name">SHELL</div>
+                            <div class="instruction-desc">默认Shell</div>
+                        </div>
+                    </div>
+                    <div class="instruction-item" data-instruction="ONBUILD">
+                        <i class="fas fa-layer-group"></i>
+                        <div>
+                            <div class="instruction-name">ONBUILD</div>
+                            <div class="instruction-desc">触发器指令</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间编辑器 -->
+            <div class="main-editor">
+                <div class="editor-header">
+                    <div class="editor-title">
+                        <i class="fab fa-docker"></i> Dockerfile
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" onclick="clearEditor()">
+                            <i class="fas fa-trash"></i> 清空
+                        </button>
+                        <button class="btn btn-primary" onclick="copyToClipboard()">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                        <button class="btn btn-success" onclick="downloadDockerfile()">
+                            <i class="fas fa-download"></i> 下载
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-wrapper">
+                    <div class="line-numbers" id="lineNumbers">1</div>
+                    <textarea class="editor-content" id="dockerfileEditor" placeholder="# 点击左侧指令开始构建您的 Dockerfile\n# 或者直接在这里编写\n\nFROM ubuntu:20.04\n\n# 设置工作目录\nWORKDIR /app\n\n# 复制应用文件\nCOPY . .\n\n# 暴露端口\nEXPOSE 8000\n\n# 启动命令\nCMD [\"echo\", \"Hello Docker!\"]"></textarea>
+                </div>
+            </div>
+
+            <!-- 右侧配置面板 -->
+            <div class="properties-panel">
+                <div class="panel-title">
+                    <i class="fas fa-sliders-h"></i> 指令配置
+                </div>
+                
+                <div class="quick-actions">
+                    <div class="quick-btn" onclick="addQuickTemplate('node')">
+                        <i class="fab fa-node-js"></i><br>Node.js
+                    </div>
+                    <div class="quick-btn" onclick="addQuickTemplate('python')">
+                        <i class="fab fa-python"></i><br>Python
+                    </div>
+                    <div class="quick-btn" onclick="addQuickTemplate('java')">
+                        <i class="fab fa-java"></i><br>Java
+                    </div>
+                    <div class="quick-btn" onclick="addQuickTemplate('nginx')">
+                        <i class="fas fa-server"></i><br>Nginx
+                    </div>
+                </div>
+
+                <div id="instructionForm" class="instruction-form" style="display: none;">
+                    <h4 id="formTitle">配置指令</h4>
+                    <div id="formContent"></div>
+                    <button class="add-instruction-btn" onclick="addInstruction()">
+                        <i class="fas fa-plus"></i> 添加到 Dockerfile
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">常用配置</label>
+                    <div style="display: grid; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="addComment()" style="justify-self: stretch;">
+                            <i class="fas fa-comment"></i> 添加注释
+                        </button>
+                        <button class="btn btn-secondary" onclick="addEmptyLine()" style="justify-self: stretch;">
+                            <i class="fas fa-arrows-alt-v"></i> 添加空行
+                        </button>
+                        <button class="btn btn-secondary" onclick="formatDockerfile()" style="justify-self: stretch;">
+                            <i class="fas fa-magic"></i> 格式化
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentInstruction = null;
+        const editor = document.getElementById('dockerfileEditor');
+        const lineNumbers = document.getElementById('lineNumbers');
+
+        // 指令配置模板
+        const instructionTemplates = {
+            FROM: {
+                title: 'FROM - 基础镜像',
+                fields: [
+                    { name: 'image', label: '镜像名称', type: 'datalist', options: ['ubuntu:20.04', 'alpine:latest', 'node:16', 'python:3.9', 'nginx:latest', 'openjdk:11', 'debian:bullseye', 'centos:8', 'redis:latest', 'mysql:8.0', 'postgres:13'], placeholder: '输入或选择镜像名称，如: ubuntu:20.04', required: true },
+                    { name: 'alias', label: '别名 (可选)', type: 'text', placeholder: '如: builder' }
+                ]
+            },
+            RUN: {
+                title: 'RUN - 执行命令',
+                fields: [
+                    { name: 'command', label: '命令', type: 'textarea', placeholder: 'apt-get update && apt-get install -y python3', required: true }
+                ]
+            },
+            COPY: {
+                title: 'COPY - 复制文件',
+                fields: [
+                    { name: 'source', label: '源路径', type: 'text', placeholder: '. 或 src/', required: true },
+                    { name: 'dest', label: '目标路径', type: 'text', placeholder: '/app', required: true },
+                    { name: 'chown', label: '所有者 (可选)', type: 'text', placeholder: 'user:group' }
+                ]
+            },
+            ADD: {
+                title: 'ADD - 添加文件',
+                fields: [
+                    { name: 'source', label: '源路径/URL', type: 'text', placeholder: '. 或 http://example.com/file.tar.gz', required: true },
+                    { name: 'dest', label: '目标路径', type: 'text', placeholder: '/app', required: true }
+                ]
+            },
+            WORKDIR: {
+                title: 'WORKDIR - 工作目录',
+                fields: [
+                    { name: 'path', label: '目录路径', type: 'text', placeholder: '/app', required: true }
+                ]
+            },
+            ENV: {
+                title: 'ENV - 环境变量',
+                fields: [
+                    { name: 'key', label: '变量名', type: 'text', placeholder: 'NODE_ENV', required: true },
+                    { name: 'value', label: '变量值', type: 'text', placeholder: 'production', required: true }
+                ]
+            },
+            ARG: {
+                title: 'ARG - 构建参数',
+                fields: [
+                    { name: 'key', label: '参数名', type: 'text', placeholder: 'VERSION', required: true },
+                    { name: 'value', label: '默认值 (可选)', type: 'text', placeholder: 'latest' }
+                ]
+            },
+            EXPOSE: {
+                title: 'EXPOSE - 暴露端口',
+                fields: [
+                    { name: 'port', label: '端口号', type: 'text', placeholder: '8000 或 8000/tcp', required: true }
+                ]
+            },
+            VOLUME: {
+                title: 'VOLUME - 挂载卷',
+                fields: [
+                    { name: 'path', label: '挂载路径', type: 'text', placeholder: '/data', required: true }
+                ]
+            },
+            CMD: {
+                title: 'CMD - 默认命令',
+                fields: [
+                    { name: 'command', label: '命令', type: 'textarea', placeholder: '["node", "app.js"] 或 node app.js', required: true }
+                ]
+            },
+            ENTRYPOINT: {
+                title: 'ENTRYPOINT - 入口点',
+                fields: [
+                    { name: 'command', label: '命令', type: 'textarea', placeholder: '["node", "app.js"]', required: true }
+                ]
+            },
+            USER: {
+                title: 'USER - 切换用户',
+                fields: [
+                    { name: 'user', label: '用户名', type: 'text', placeholder: 'node 或 1001:1001', required: true }
+                ]
+            },
+            LABEL: {
+                title: 'LABEL - 标签',
+                fields: [
+                    { name: 'key', label: '标签名', type: 'text', placeholder: 'version', required: true },
+                    { name: 'value', label: '标签值', type: 'text', placeholder: '1.0.0', required: true }
+                ]
+            },
+            HEALTHCHECK: {
+                title: 'HEALTHCHECK - 健康检查',
+                fields: [
+                    { name: 'command', label: '检查命令', type: 'text', placeholder: 'curl -f http://localhost/ || exit 1', required: true },
+                    { name: 'interval', label: '检查间隔', type: 'text', placeholder: '30s' },
+                    { name: 'timeout', label: '超时时间', type: 'text', placeholder: '3s' }
+                ]
+            },
+            STOPSIGNAL: {
+                title: 'STOPSIGNAL - 停止信号',
+                fields: [
+                    { name: 'signal', label: '信号', type: 'select', options: ['SIGTERM', 'SIGKILL', 'SIGINT'], required: true }
+                ]
+            },
+            SHELL: {
+                title: 'SHELL - 默认Shell',
+                fields: [
+                    { name: 'shell', label: 'Shell命令', type: 'text', placeholder: '["/bin/bash", "-c"]', required: true }
+                ]
+            },
+            ONBUILD: {
+                title: 'ONBUILD - 触发器',
+                fields: [
+                    { name: 'instruction', label: '触发指令', type: 'text', placeholder: 'COPY . /app', required: true }
+                ]
+            },
+            MAINTAINER: {
+                title: 'MAINTAINER - 维护者',
+                fields: [
+                    { name: 'maintainer', label: '维护者信息', type: 'text', placeholder: 'name <email@example.com>', required: true }
+                ]
+            }
+        };
+
+        // 快速模板
+        const quickTemplates = {
+            node: `# Node.js 应用模板
+FROM node:16-alpine
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3000
+
+USER node
+
+CMD ["npm", "start"]`,
+            python: `# Python 应用模板
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "app.py"]`,
+            java: `# Java 应用模板
+FROM openjdk:11-jre-slim
+
+WORKDIR /app
+
+COPY target/*.jar app.jar
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "app.jar"]`,
+            nginx: `# Nginx 静态网站模板
+FROM nginx:alpine
+
+COPY dist/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]`
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLineNumbers();
+            
+            // 指令点击事件
+            document.querySelectorAll('.instruction-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const instruction = this.getAttribute('data-instruction');
+                    selectInstruction(instruction);
+                });
+            });
+
+            // 编辑器内容变化事件
+            editor.addEventListener('input', updateLineNumbers);
+            editor.addEventListener('scroll', syncScroll);
+        });
+
+        // 选择指令
+        function selectInstruction(instruction) {
+            // 更新选中状态
+            document.querySelectorAll('.instruction-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-instruction="${instruction}"]`).classList.add('active');
+
+            currentInstruction = instruction;
+            showInstructionForm(instruction);
+        }
+
+        // 显示指令配置表单
+        function showInstructionForm(instruction) {
+            const template = instructionTemplates[instruction];
+            if (!template) return;
+
+            const form = document.getElementById('instructionForm');
+            const title = document.getElementById('formTitle');
+            const content = document.getElementById('formContent');
+
+            title.textContent = template.title;
+            
+            let html = '';
+            template.fields.forEach(field => {
+                html += `<div class="form-group">`;
+                html += `<label class="form-label">${field.label}${field.required ? ' *' : ''}</label>`;
+                
+                if (field.type === 'select') {
+                    html += `<select class="form-select" data-field="${field.name}">`;
+                    field.options.forEach(option => {
+                        html += `<option value="${option}">${option}</option>`;
+                    });
+                    html += `</select>`;
+                } else if (field.type === 'datalist') {
+                    const listId = `${field.name}-list`;
+                    html += `<input type="text" class="form-input" data-field="${field.name}" placeholder="${field.placeholder || ''}" list="${listId}">`;
+                    html += `<datalist id="${listId}">`;
+                    field.options.forEach(option => {
+                        html += `<option value="${option}">`;
+                    });
+                    html += `</datalist>`;
+                } else if (field.type === 'textarea') {
+                    html += `<textarea class="form-textarea" data-field="${field.name}" placeholder="${field.placeholder || ''}"></textarea>`;
+                } else {
+                    html += `<input type="text" class="form-input" data-field="${field.name}" placeholder="${field.placeholder || ''}">`;
+                }
+                html += `</div>`;
+            });
+
+            content.innerHTML = html;
+            form.style.display = 'block';
+        }
+
+        // 添加指令到编辑器
+        function addInstruction() {
+            if (!currentInstruction) return;
+
+            const template = instructionTemplates[currentInstruction];
+            const formData = {};
+            
+            // 收集表单数据
+            document.querySelectorAll('#formContent [data-field]').forEach(field => {
+                const fieldName = field.getAttribute('data-field');
+                formData[fieldName] = field.value.trim();
+            });
+
+            // 验证必填字段
+            const requiredFields = template.fields.filter(f => f.required);
+            for (let field of requiredFields) {
+                if (!formData[field.name]) {
+                    alert(`请填写 ${field.label}`);
+                    return;
+                }
+            }
+
+            // 生成指令
+            let instruction = generateInstruction(currentInstruction, formData);
+            
+            // 添加到编辑器
+            const currentContent = editor.value;
+            const newContent = currentContent + (currentContent ? '\n' : '') + instruction;
+            editor.value = newContent;
+            updateLineNumbers();
+
+            // 清空表单
+            document.querySelectorAll('#formContent [data-field]').forEach(field => {
+                field.value = '';
+            });
+        }
+
+        // 生成指令字符串
+        function generateInstruction(instructionType, data) {
+            switch (instructionType) {
+                case 'FROM':
+                    return `FROM ${data.image}${data.alias ? ` AS ${data.alias}` : ''}`;
+                case 'RUN':
+                    return `RUN ${data.command}`;
+                case 'COPY':
+                    return `COPY ${data.chown ? `--chown=${data.chown} ` : ''}${data.source} ${data.dest}`;
+                case 'ADD':
+                    return `ADD ${data.source} ${data.dest}`;
+                case 'WORKDIR':
+                    return `WORKDIR ${data.path}`;
+                case 'ENV':
+                    return `ENV ${data.key}=${data.value}`;
+                case 'ARG':
+                    return `ARG ${data.key}${data.value ? `=${data.value}` : ''}`;
+                case 'EXPOSE':
+                    return `EXPOSE ${data.port}`;
+                case 'VOLUME':
+                    return `VOLUME ["${data.path}"]`;
+                case 'CMD':
+                    return `CMD ${data.command}`;
+                case 'ENTRYPOINT':
+                    return `ENTRYPOINT ${data.command}`;
+                case 'USER':
+                    return `USER ${data.user}`;
+                case 'LABEL':
+                    return `LABEL ${data.key}="${data.value}"`;
+                case 'HEALTHCHECK':
+                    let healthcheck = 'HEALTHCHECK';
+                    if (data.interval) healthcheck += ` --interval=${data.interval}`;
+                    if (data.timeout) healthcheck += ` --timeout=${data.timeout}`;
+                    healthcheck += ` CMD ${data.command}`;
+                    return healthcheck;
+                case 'STOPSIGNAL':
+                    return `STOPSIGNAL ${data.signal}`;
+                case 'SHELL':
+                    return `SHELL ${data.shell}`;
+                case 'ONBUILD':
+                    return `ONBUILD ${data.instruction}`;
+                case 'MAINTAINER':
+                    return `MAINTAINER ${data.maintainer}`;
+                default:
+                    return '';
+            }
+        }
+
+        // 快速模板
+        function addQuickTemplate(type) {
+            if (quickTemplates[type]) {
+                editor.value = quickTemplates[type];
+                updateLineNumbers();
+            }
+        }
+
+        // 更新行号
+        function updateLineNumbers() {
+            const lines = editor.value.split('\n').length;
+            let lineNumbersText = '';
+            for (let i = 1; i <= lines; i++) {
+                lineNumbersText += i + '\n';
+            }
+            lineNumbers.textContent = lineNumbersText;
+        }
+
+        // 同步滚动
+        function syncScroll() {
+            lineNumbers.scrollTop = editor.scrollTop;
+        }
+
+        // 工具函数
+        function clearEditor() {
+            if (confirm('确定要清空编辑器内容吗？')) {
+                editor.value = '';
+                updateLineNumbers();
+            }
+        }
+
+        function copyToClipboard() {
+            editor.select();
+            document.execCommand('copy');
+            alert('Dockerfile 内容已复制到剪贴板！');
+        }
+
+        function downloadDockerfile() {
+            const content = editor.value;
+            const blob = new Blob([content], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Dockerfile';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function addComment() {
+            const comment = prompt('请输入注释内容:');
+            if (comment) {
+                const currentContent = editor.value;
+                const newContent = currentContent + (currentContent ? '\n' : '') + `# ${comment}`;
+                editor.value = newContent;
+                updateLineNumbers();
+            }
+        }
+
+        function addEmptyLine() {
+            const currentContent = editor.value;
+            editor.value = currentContent + '\n';
+            updateLineNumbers();
+        }
+
+        function formatDockerfile() {
+            // 简单的格式化：移除多余空行，确保指令前有适当间距
+            let content = editor.value;
+            content = content.replace(/\n\s*\n\s*\n/g, '\n\n'); // 移除多余空行
+            content = content.replace(/^\s+/gm, ''); // 移除行首空格
+            editor.value = content;
+            updateLineNumbers();
+        }
+    </script>
+</body>
+</html>
